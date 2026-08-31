@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Build artifacts
+bin/
+build/
+dist/
+*.spec.bak
+.buildozer/
+
+# Media / downloads
+*.mp4
+*.mp3
+*.webm
+*.mkv
+*.log
+
+# Environment
+.env
