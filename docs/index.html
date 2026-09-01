@@ -130,9 +130,9 @@
 
         <footer id="support">
             <div class="footer-links">
-                <a href="https://github.com/kinkysweetfeet90-ship-it/lastic-productions-YT">GitHub</a>
-                <a href="https://github.com/kinkysweetfeet90-ship-it/lastic-productions-YT/releases">Releases</a>
-                <a href="https://github.com/kinkysweetfeet90-ship-it/lastic-productions-YT/actions">Build Status</a>
+                <a href="https://github.com/lasticproductions247-hub/lastic-productions-YT">GitHub</a>
+                <a href="https://github.com/lasticproductions247-hub/lastic-productions-YT/releases">Releases</a>
+                <a href="https://github.com/lasticproductions247-hub/lastic-productions-YT/actions">Build Status</a>
             </div>
             <p>STUDIO CYBER · LASTIC PRODUCTIONS · 2026</p>
         </footer>
@@ -194,7 +194,7 @@
         // Check build status
         async function checkBuildStatus() {
             try {
-                const res = await fetch('https://api.github.com/repos/kinkysweetfeet90-ship-it/lastic-productions-YT/actions/runs?per_page=3');
+                const res = await fetch('https://api.github.com/repos/lasticproductions247-hub/lastic-productions-YT/actions/runs?per_page=3');
                 const data = await res.json();
                 const latest = data.workflow_runs?.[0];
                 if (latest) {
@@ -216,7 +216,7 @@
         setInterval(checkBuildStatus, 60000); // Check every minute
 
         // Smart download logic
-        const API_URL = "https://lastic-productions.onrender.com";
+        const API_URL = "https://lastic-downloader-backend.onrender.com";
 
         async function openDownloadModal() {
             const platforms = [
@@ -262,7 +262,7 @@
                     <div class="app-downloads" style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-color);">
                         <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">Or get the full desktop app:</p>
                         <div class="app-downloads-grid" style="display: flex; gap: 12px;">
-                            <a href="https://github.com/kinkysweetfeet90-ship-it/lastic-productions-YT/releases/latest" class="app-download-btn" style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 8px; text-align: center; text-decoration: none; font-size: 13px;">
+                            <a href="https://github.com/lasticproductions247-hub/lastic-productions-YT/releases/latest" class="app-download-btn" style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px; border-radius: 8px; text-align: center; text-decoration: none; font-size: 13px;">
                                 <i class="fab fa-github"></i> GitHub Releases
                             </a>
                         </div>
@@ -289,14 +289,22 @@
             btn.disabled = true;
 
             try {
-                const res = await fetch(`${API_URL}/info`, {
+                const res = await fetch(`${API_URL}/analyze`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ url: url })
                 });
 
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                if (!res.ok) {
+                    let msg = `HTTP ${res.status}`;
+                    try {
+                        const err = await res.json();
+                        if (err.error) msg = err.error;
+                    } catch(_) {}
+                    throw new Error(msg);
+                }
                 const data = await res.json();
+                window.__videoUrl = data.fixed_url || url;
                 showVideoDetails(data, url);
             } catch(e) {
                 alert('Fetch failed: ' + e.message + '\n\nUse the desktop app for reliable downloads.');
@@ -315,34 +323,107 @@
                 <div class="video-info" style="flex: 1; min-width: 0;">
                     <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">${data.title || 'Unknown Title'}</h4>
                     <div class="meta" style="font-size: 11px; color: var(--text-secondary); line-height: 1.6;">
-                        <div>• Duration: ${data.duration || 'N/A'}</div>
-                        <div>• Platform: ${data.platform || 'Detected'}</div>
-                        ${data.uploader ? `<div>• Uploader: ${data.uploader}</div>` : ''}
+                        ${data.is_playlist ? `<div>• Playlist detected (${data.video_count || '?'} videos)</div>` : ''}
                     </div>
                 </div>
             </div>`;
 
-            if (data.formats && data.formats.length > 0) {
+            if (data.qualities && data.qualities.length > 0) {
                 html += '<select id="formatSelect" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 13px; margin-top: 12px;">';
-                data.formats.forEach(fmt => {
-                    const label = `${fmt.quality || fmt.ext} • ${fmt.ext} • ${fmt.type || 'video'}`;
-                    html += `<option value="${fmt.url || fmt.quality}">${label}</option>`;
+                data.qualities.forEach(q => {
+                    html += `<option value="${q}">${q}</option>`;
                 });
                 html += '</select>';
             }
 
-            html += `<button class="download-btn" style="width: 100%; padding: 12px; border: none; border-radius: 12px; background: var(--gradient-main); color: #000; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; margin-top: 12px;" onclick="downloadFile('${encodeURIComponent(url)}')">
+            html += `<div id="downloadProgress" style="display:none; margin-top: 12px;">
+                <div style="height: 8px; background: rgba(0,0,0,0.3); border-radius: 6px; overflow: hidden;">
+                    <div id="downloadProgressBar" style="height: 100%; width: 0%; background: var(--gradient-main); transition: width 0.3s;"></div>
+                </div>
+                <div id="downloadStatusText" style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">Queued...</div>
+            </div>
+            <button class="download-btn" id="downloadNowBtn" style="width: 100%; padding: 12px; border: none; border-radius: 12px; background: var(--gradient-main); color: #000; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; margin-top: 12px;">
                 <i class="fas fa-download"></i> DOWNLOAD NOW
-            </button>`;
+            </button>
+            <a id="downloadReady" style="display:none; width: 100%; padding: 12px; background: var(--success); color: #fff; text-align: center; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 14px; margin-top: 12px;" target="_blank">
+                <i class="fas fa-check"></i> SAVE FILE
+            </a>`;
 
             section.innerHTML = html;
+
+            document.getElementById('downloadNowBtn').onclick = function() {
+                downloadFile(window.__videoUrl || url);
+            };
         }
 
-        function downloadFile(encodedUrl) {
+        function downloadFile(url) {
             const fmt = document.getElementById('formatSelect');
-            const selected = fmt ? fmt.value : '';
-            const downloadUrl = `${API_URL}/download?url=${encodedUrl}${fmt ? '&format=' + encodeURIComponent(selected) : ''}`;
-            window.open(downloadUrl, '_blank');
+            const selected = fmt ? fmt.value : 'Best';
+            const progress = document.getElementById('downloadProgress');
+            const bar = document.getElementById('downloadProgressBar');
+            const statusText = document.getElementById('downloadStatusText');
+            const ready = document.getElementById('downloadReady');
+            const btn = document.getElementById('downloadNowBtn');
+
+            if (progress) progress.style.display = 'block';
+            if (btn) btn.disabled = true;
+            if (ready) ready.style.display = 'none';
+
+            const body = { url: url, quality: selected };
+            if (selected === 'Audio Only') {
+                body.audio_format = 'mp3';
+                body.bitrate = '320';
+            }
+
+            fetch(`${API_URL}/download`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            }).then(async res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+                if (data.message) {
+                    if (statusText) statusText.textContent = data.message;
+                }
+                return pollDownload(bar, statusText, ready, btn);
+            }).catch(e => {
+                alert('Download failed: ' + e.message);
+                if (statusText) statusText.textContent = 'Error: ' + e.message;
+                if (btn) btn.disabled = false;
+            });
+        }
+
+        async function pollDownload(bar, statusText, ready, btn) {
+            try {
+                const res = await fetch(`${API_URL}/status`);
+                const data = await res.json();
+
+                if (bar) bar.style.width = (data.progress || 0) + '%';
+                if (statusText) statusText.textContent = (data.status || '') + (data.speed && data.speed !== 'N/A' ? ' · ' + data.speed : '') + (data.eta && data.eta !== 'N/A' ? ' · ' + data.eta : '');
+
+                if (data.error) {
+                    if (statusText) statusText.textContent = 'Error: ' + data.error;
+                    if (btn) btn.disabled = false;
+                    return;
+                }
+
+                if (data.finished) {
+                    if (bar) bar.style.width = '100%';
+                    if (statusText) statusText.textContent = 'Done!';
+                    if (ready) {
+                        ready.href = `${API_URL}/get_file`;
+                        ready.style.display = 'block';
+                    }
+                    if (btn) btn.disabled = false;
+                    return;
+                }
+
+                setTimeout(() => pollDownload(bar, statusText, ready, btn), 1500);
+            } catch (e) {
+                if (statusText) statusText.textContent = 'Status check failed: ' + e.message;
+                if (btn) btn.disabled = false;
+            }
         }
 
         console.log("%cSTUDIO CYBER · LASTIC PRODUCTIONS", "color:#38bdf8; font-family:monospace");
