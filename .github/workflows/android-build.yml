@@ -33,6 +33,10 @@ jobs:
         rm -rf $ANDROID_HOME/tools
         ln -s $ANDROID_HOME/cmdline-tools/latest $ANDROID_HOME/tools
 
+    - name: Patch venv for Python 3.14
+      run: |
+        /home/user/.venv/bin/python3 -m pip install -q legacy-cgi || true
+
     - name: Build APK
       run: |
         buildozer -v android debug
