@@ -19,6 +19,7 @@ android.api = 33
 android.minapi = 21
 android.sdk = 33
 android.ndk = 25c
+p4a.branch = v2024.01.21
 android.gradle_dependencies = androidx.core:core:1.9.0
 android.archs = arm64-v8a
 android.accept_sdk_license = True
