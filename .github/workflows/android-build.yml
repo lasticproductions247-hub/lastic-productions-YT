@@ -59,6 +59,8 @@ jobs:
         yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME --licenses > /dev/null || true
         $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME \
           "platform-tools" "platforms;android-33" "build-tools;33.0.0"
+        mkdir -p $ANDROID_HOME/tools
+        ln -sfn $ANDROID_HOME/cmdline-tools/latest $ANDROID_HOME/tools
 
     - name: Build APK
       run: |
