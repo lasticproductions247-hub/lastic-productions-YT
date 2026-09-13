@@ -8,6 +8,7 @@ version = 1.0.0
 requirements = python3,kivy==2.2.1,yt-dlp,ffmpeg-python
 orientation = portrait
 fullscreen = 0
+p4a.branch = v2024.01.21
 
 [buildozer]
 log_level = 2
@@ -19,7 +20,6 @@ android.api = 33
 android.minapi = 21
 android.sdk = 33
 android.ndk = 25c
-p4a.branch = v2024.01.21
 android.gradle_dependencies = androidx.core:core:1.9.0
 android.archs = arm64-v8a
 android.accept_sdk_license = True
