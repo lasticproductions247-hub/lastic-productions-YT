@@ -11,61 +11,15 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: kivy/buildozer:latest
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-
-    - name: Set up Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
-
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential git zip unzip autoconf automake libtool \
-          pkg-config zlib1g-dev libncurses-dev cmake libffi-dev \
-          libssl-dev ffmpeg ccache
-
-    - name: Install Buildozer
-      run: |
-        pip3 install --upgrade pip wheel setuptools
-        pip3 install buildozer cython
-
-    - name: Cache Buildozer global dir
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.buildozer
-          ~/.cache/pip
-        key: buildozer-${{ runner.os }}-v2-${{ hashFiles('buildozer.spec') }}
-        restore-keys: buildozer-${{ runner.os }}-v2-
-
-    - name: Pre-install Android SDK into Buildozer's path
-      run: |
-        export ANDROID_HOME=$HOME/.buildozer/android/platform/android-sdk
-        mkdir -p $ANDROID_HOME/cmdline-tools
-        wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/clt.zip
-        unzip -q /tmp/clt.zip -d /tmp/clt
-        rm -rf $ANDROID_HOME/cmdline-tools/latest
-        mv /tmp/clt/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME --licenses > /dev/null || true
-        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_HOME \
-          "platform-tools" "platforms;android-33" "build-tools;33.0.0"
-        rm -rf $ANDROID_HOME/tools
-        ln -s $ANDROID_HOME/cmdline-tools/latest $ANDROID_HOME/tools
-
     - name: Build APK
       run: |
-        export ANDROID_SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk
-        export ANDROIDSDK=$ANDROID_SDK_ROOT
         buildozer -v android debug
 
     - name: Upload APK artifact
